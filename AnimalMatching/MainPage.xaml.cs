@@ -2,24 +2,19 @@
 
 public partial class MainPage : ContentPage
 {
-	List<string> selectedEmoji = new List<string>(2);
-	Boolean isRunning; 
-	Boolean isMatch; 
-	int matchCount;
-
+	Button lastClickedButton; 
+	bool findingMatch = false; 
+	int matchesFound; 
+	int tenthOfSecondsElapsed = 0;
 
 	public MainPage()
 	{
 		InitializeComponent();
-		isRunning = false; 
-		isMatch = false;
-		matchCount = 0;
 	}
 
 
 	private void PlayAgainButton_Clicked(object sender, EventArgs e)
 	{
-		isRunning = true;
 		AnimalButtons.IsVisible = true; // show the buttons
 		PlayAgainButton.IsVisible = false; // Hide the play again button
 
@@ -40,51 +35,58 @@ public partial class MainPage : ContentPage
 			button.Text = nextEmoji; 
 			animalEmoji.RemoveAt(index);
 		}
-
+		Dispatcher.StartTimer(TimeSpan.FromSeconds(1), TimerTick);
 
 	}
-	private void Button_Clicked(object sender, EventArgs e)
+
+    private bool TimerTick()
+    {
+		
+
+        if(!this.IsLoaded)
+			return false;
+		
+
+		tenthOfSecondsElapsed++; 
+
+		TimeElapsed.Text = "Time elapsed: " + (tenthOfSecondsElapsed / 10F).ToString("0.0s"); 
+
+		if(PlayAgainButton.IsVisible){
+			tenthOfSecondsElapsed =0; 
+			return false; 
+		}
+
+		return true; 
+    }
+
+    private void Button_Clicked(object sender, EventArgs e)
 	{
-		// get the first button clicked
-			Button button = (Button)sender;
-			button.BackgroundColor = Colors.Red;
-			selectedEmoji.Add(button.Text);
+		if( sender is Button buttonClicked){
+			if(!string.IsNullOrWhiteSpace(buttonClicked.Text) && (findingMatch == false)){
+				buttonClicked.BackgroundColor = Colors.Red; 
+				lastClickedButton = buttonClicked;
+				findingMatch = true;
 
-		if(selectedEmoji.Count >= 2){
-			if(selectedEmoji[0] == selectedEmoji[1]){
-				// if the text of the buttons are the same, then they are a match
-				// remove the emoji from the list
-				isMatch = true;
-				matchCount += 1;
-				ReplaceMatchedButtons(selectedEmoji[0]);
-				CheckMatchFound();
-				selectedEmoji.Clear();
 			}else {
-				// if the text of the buttons are not the same, then they are not a match
-				// reset the color of the buttons
-				isMatch = false;
-				selectedEmoji.Clear();
+			if(buttonClicked != lastClickedButton && buttonClicked.Text == lastClickedButton.Text && 
+			!string.IsNullOrEmpty(buttonClicked.Text)) {
+				matchesFound++; 
+				lastClickedButton.Text = ""; 
+				buttonClicked.Text = "";
 			}
+			lastClickedButton.BackgroundColor = Colors.LightBlue;
+			buttonClicked.BackgroundColor = Colors.LightBlue;
+			findingMatch = false;
+		} 
 		}
 
-	}
-
-	private void ReplaceMatchedButtons(string emoji){
-		foreach (var button in AnimalButtons.Children.OfType<Button>()){
-			if(button.Text == emoji){
-				button.Text = "";
-				button.BackgroundColor = Colors.White;
-			}
-		}
-	}
-
-	private void CheckMatchFound(){
-		if(matchCount == 8){
+		if(matchesFound == 8){
+			matchesFound = 0; 
 			AnimalButtons.IsVisible = false;
-			PlayAgainButton.IsVisible = true;
-			isRunning = false;
-			matchCount = 0;
+			PlayAgainButton.IsVisible = true; 
 		}
+
 	}
+
 }
 
